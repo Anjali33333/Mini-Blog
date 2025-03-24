@@ -31,8 +31,7 @@ SECURE_SSL_REDIRECT = True
 X_FRAME_OPTIONS = "DENY"
 
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [' mini-blog-b6ry.onrender.com'] 
 
 # Application definition
 
