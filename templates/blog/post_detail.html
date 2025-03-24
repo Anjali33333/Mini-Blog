@@ -1,25 +1,250 @@
 {% extends "blog/base.html" %}
+{% load crispy_forms_tags %}
+
 {% block content %}
-    <article class="media content-section">
-        <div class="media-body">
-            <div class="article-metadata">
-                <a class="mr-2" href="{% url 'user_posts' object.author.username %}">{{ object.author }}</a>
-                <small class="text-muted">{{ object.published_at|date:"F d, Y" }}</small>
-                {% if object.author == user %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <article class="content-section">
+                <div class="article-metadata d-flex align-items-center">
+                    <img class="rounded-circle article-img" src="{{ object.author.profile.image.url }}" style="width: 40px; height: 40px; object-fit: cover;">
                     <div>
-                        <a class="btn btn-secondary btn-sm mt-1 mb-1" href="{% url 'post_update' object.pk %}">Update</a>
-                        <a class="btn btn-danger btn-sm mt-1 mb-1" href="{% url 'post_delete' object.pk %}">Delete</a>
+                        <a class="author-link" href="{% url 'user_posts' object.author.username %}">{{ object.author }}</a>
+                        <br>
+                        <small class="text-muted">{{ object.created_at|date:"F d, Y" }}</small>
+                    </div>
+                </div>
+                <h1 class="article-title mb-4">{{ object.title }}</h1>
+                {% if object.image %}
+                    <div class="article-image mb-3">
+                        <img src="{{ object.image.url }}" alt="{{ object.title }}" class="img-fluid rounded">
                     </div>
                 {% endif %}
-            </div>
-            <h2 class="article-title">{{ object.title }}</h2>
-            <p class="article-content">{{ object.content }}</p>
-            {% if object.expires_at %}
-                <small class="text-muted">Expires: {{ object.expires_at|date:"F d, Y" }}</small>
-            {% endif %}
-            {% if object.is_draft %}
-                <small class="text-muted">Status: Draft</small>
-            {% endif %}
+                <div class="article-content">
+                    {{ object.content|linebreaks }}
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-outline-info like-btn {% if is_liked %}liked{% endif %}" data-post-id="{{ object.pk }}">
+                            <i class="fas fa-heart {% if is_liked %}text-danger{% endif %}"></i>
+                            <span class="like-count">{{ object.total_likes }}</span>
+                        </button>
+                    </div>
+                    {% if object.author == user %}
+                        <div>
+                            <a class="btn btn-outline-secondary" href="{% url 'post_update' object.pk %}">
+                                <i class="fas fa-edit me-2"></i>Update
+                            </a>
+                            <a class="btn btn-outline-danger" href="{% url 'post_delete' object.pk %}">
+                                <i class="fas fa-trash me-2"></i>Delete
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </article>
         </div>
-    </article>
+    </div>
+</div>
+
+<!-- Comments Section -->
+<div class="content-section mt-4">
+    <h4 class="mb-4">Comments</h4>
+    
+    {% if user.is_authenticated %}
+        <form method="POST" action="{% url 'add_comment' object.pk %}" class="mb-4">
+            {% csrf_token %}
+            {{ comment_form|crispy }}
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-comment me-2"></i>Add Comment
+            </button>
+        </form>
+    {% else %}
+        <div class="alert alert-info">
+            Please <a href="{% url 'login' %}" class="alert-link">login</a> to leave a comment.
+        </div>
+    {% endif %}
+
+    {% if comments %}
+        {% for comment in comments %}
+            <div class="comment-section mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <img class="rounded-circle me-2" src="{{ comment.author.profile.image.url }}" style="width: 32px; height: 32px; object-fit: cover;">
+                    <div>
+                        <a class="author-link" href="{% url 'user_posts' comment.author.username %}">{{ comment.author }}</a>
+                        <br>
+                        <small class="text-muted">{{ comment.date_posted|date:"F d, Y" }}</small>
+                    </div>
+                </div>
+                <p class="mb-2">{{ comment.content }}</p>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-info like-btn" data-comment-id="{{ comment.pk }}">
+                        <i class="fas fa-heart"></i>
+                        <span class="like-count">{{ comment.total_likes }}</span>
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No comments yet. Be the first to comment!</p>
+    {% endif %}
+</div>
+
+<style>
+    .article-img {
+        margin-right: 10px;
+    }
+
+    .article-title {
+        color: var(--primary-color);
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+
+    .article-content {
+        color: #666;
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+
+    .article-metadata {
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #eee;
+    }
+
+    .article-metadata a {
+        color: var(--secondary-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .article-metadata a:hover {
+        color: var(--primary-color);
+    }
+
+    .btn-outline-info {
+        color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-info:hover {
+        background-color: var(--secondary-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline-danger {
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-danger:hover {
+        background-color: var(--accent-color);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .like-btn {
+        transition: all 0.3s ease;
+    }
+
+    .like-btn.liked {
+        color: var(--accent-color);
+    }
+
+    .like-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .comment-section {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: rgba(232, 67, 147, 0.05);
+        border: 1px solid rgba(232, 67, 147, 0.1);
+    }
+
+    .comment-section:hover {
+        background-color: rgba(232, 67, 147, 0.08);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle post likes
+    const postLikeBtn = document.querySelector('.like-btn[data-post-id]');
+    if (postLikeBtn) {
+        postLikeBtn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            fetch(`/like-post/${postId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                const heartIcon = this.querySelector('.fa-heart');
+                const likeCount = this.querySelector('.like-count');
+                
+                if (data.liked) {
+                    this.classList.add('liked');
+                    heartIcon.classList.add('text-danger');
+                } else {
+                    this.classList.remove('liked');
+                    heartIcon.classList.remove('text-danger');
+                }
+                
+                likeCount.textContent = data.total_likes;
+            });
+        });
+    }
+
+    // Handle comment likes
+    const commentLikeBtns = document.querySelectorAll('.like-btn[data-comment-id]');
+    commentLikeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const commentId = this.dataset.commentId;
+            fetch(`/like-comment/${commentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                const heartIcon = this.querySelector('.fa-heart');
+                const likeCount = this.querySelector('.like-count');
+                
+                if (data.liked) {
+                    this.classList.add('liked');
+                    heartIcon.classList.add('text-danger');
+                } else {
+                    this.classList.remove('liked');
+                    heartIcon.classList.remove('text-danger');
+                }
+                
+                likeCount.textContent = data.total_likes;
+            });
+        });
+    });
+});
+
+// Function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock content %} 
